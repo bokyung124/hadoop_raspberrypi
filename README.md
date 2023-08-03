@@ -5,7 +5,7 @@
 |---|---|
 |Raspberry pi|4B 4GB|
 |Hadoop|3.3.6|
-|MariaDB||
+|MariaDB|10.5.19|
 |Sqoop|1.4.6|
 
 </br>
