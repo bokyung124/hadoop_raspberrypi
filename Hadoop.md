@@ -126,3 +126,13 @@ export HADOOP_HOME=/opt/hadoop
     </property>
 </configuration>    
 ```
+
+8. start
+```bash
+cd $HADOOP_HOME/sbin
+
+start-dfs.sh
+start-yarn.sh
+
+jps   # process 확인
+```
