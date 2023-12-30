@@ -1,6 +1,6 @@
 1. 설치
 ```bash
-wet http://wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
+wget http://wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
 ```
 
 2. ~/.bashrc
