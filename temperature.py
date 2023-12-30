@@ -4,7 +4,7 @@ import pymysql
 import time
 import sys
 
-db = pymysql.connect(host='localhost', user='root', password='dlqhrud-1124', db='sensor')
+db = pymysql.connect(host='localhost', user='root', password='***', db='sensor')
 
 try:
     with db.cursor() as cur:
