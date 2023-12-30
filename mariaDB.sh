@@ -5,6 +5,7 @@ sudo apt-get install mariadb-client mariadb-server
 show global variables like 'port';
     # 3306
 # raspberrypi에서 allow
+sudo apt-get install ufw
 sudo ufw allow 3306
 
 # 유저 권한 부여
