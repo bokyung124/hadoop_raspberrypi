@@ -1,12 +1,17 @@
 1. 설치
 ```bash
 wget http://wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
+tar xvzf hadoop-3.3.6.tar.gz
+
+# hadoop home 생성 후 이동
+mkdir hadoop
+mv hadoop-3.3.6 hadoop
 ```
 
 2. ~/.bashrc
 ```bash
 export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:jre/bin/java::")
-export HADOOP_HOME=/opt/hadoop
+export HADOOP_HOME=/hadoop/hadoop-3.3.6
 
 export HADOOP_INSTALL=$HADOOP_HOME
 export HADOOP_MAPRED_HOME=$HADOOP_HOME
