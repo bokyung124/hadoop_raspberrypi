@@ -1,10 +1,6 @@
-import Adafruit_DHT
 import RPi.GPIO as GPIO
 import time
 import smbus
-import serial
-import string
-import pynmea2
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 
