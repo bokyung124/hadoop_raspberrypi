@@ -2,17 +2,14 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.models import Variable
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import s3fs
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
-import requests
 import logging
 import json
 import pandas as pd
-from io import StringIO
 
 def get_snowflake_conn():
     hook = SnowflakeHook(snowflake_conn_id='raspberry-db')
@@ -28,7 +25,7 @@ def temp_parquet_to_csv():
     fs = s3fs.S3FileSystem(key=s3_access_key, secret=s3_access_secret)
 
     bucket_name = "raspberrypi-dacos"
-    today = datetime(2024, 1, 24).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     files = fs.glob(bucket_name + f"/*{today}*.parquet")
     dfs = [pd.read_parquet('s3://' + file, storage_options={'key':s3_access_key, 'secret':s3_access_secret}) for file in files]
 
@@ -47,7 +44,7 @@ def gas_parquet_to_csv():
     fs = s3fs.S3FileSystem(key=s3_access_key, secret=s3_access_secret)
 
     bucket_name = "raspberrypi-gas"
-    today = datetime(2024, 1, 24).strftime('%Y-%m-%d')
+    today = datetime.now().strftime('%Y-%m-%d')
     files = fs.glob(bucket_name + f"/*{today}*.parquet")
     dfs = [pd.read_parquet('s3://' + file, storage_options={'key':s3_access_key, 'secret':s3_access_secret}) for file in files]
 
@@ -79,7 +76,7 @@ def temp_s3_to_snowflake(schema, table):
 
     copy_sql = f"""
         COPY INTO t
-        FROM 's3://raspberrypi-dacos/temp_2024-01-24.csv'
+        FROM 's3://raspberrypi-dacos/temp_{today}.csv'
         CREDENTIALS = (aws_key_id='{key}' aws_secret_key='{secret}')
         ON_ERROR = CONTINUE;
     """
@@ -115,7 +112,6 @@ def gas_s3_to_snowflake(schema, table):
     secret = Variable.get('s3_access_secret')
 
     today = str(datetime.now())
-    i = 1
 
     create_table_sql = f"""
         CREATE TABLE IF NOT EXISTS {schema}.{table} (
@@ -132,7 +128,7 @@ def gas_s3_to_snowflake(schema, table):
 
     copy_sql = f"""
         COPY INTO t
-        FROM 's3://raspberrypi-gas/gas_2024-01-24.csv'
+        FROM 's3://raspberrypi-gas/gas_{today}.csv'
         CREDENTIALS = (aws_key_id='{key}' aws_secret_key='{secret}')
         ON_ERROR = CONTINUE;
     """
@@ -165,7 +161,7 @@ def gas_s3_to_snowflake(schema, table):
 with DAG(
     dag_id = 'temperature_to_snowflake',
     start_date = datetime(2024, 1, 17),
-    schedule = '@once',
+    schedule_interval = '*/10 * * * *',
     catchup = False,
     default_args = {
         'retries': 2,
