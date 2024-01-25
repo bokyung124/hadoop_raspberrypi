@@ -5,11 +5,14 @@ import smbus
 import serial
 import string
 import pynmea2
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.parser import parse
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import boto3
+import json
 
 bus = smbus.SMBus(1)
 
@@ -82,6 +85,9 @@ def gas_concentration():
 s3 = boto3.client('s3')
 bucket_name = 'raspberrypi-dacos'
 
+kine = boto3.client('kinesis', region_name='ap-northeast-2')
+
+
 data = {'Time': [],
         'Methane': [],
         'LPG': [],
@@ -89,7 +95,8 @@ data = {'Time': [],
         'Alcohol': [],
         'Carbon': []}
 
-prev_date = None
+now = datetime.now()
+prev_time = now.strftime('%Y-%m-%dT%H:%M:%S')
 
 def upload_to_s3(df, filename):
     table = pa.Table.from_pandas(df)
@@ -98,15 +105,15 @@ def upload_to_s3(df, filename):
 
 while True:
     try:
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        date = timestamp.split(' ')[0]  # Get date from timestamp
+        now = datetime.now()
+        now_time = now.strftime('%Y-%m-%dT%H:%M:%S')
         gas_methane = float(read_gas(GAS_METHANE))
         gas_lpg = float(read_gas(GAS_LPG))
         gas_smoke = float(read_gas(GAS_SMOKE))
         gas_alcohol = float(read_gas(GAS_ALCOHOL))
         gas_carbon = float(read_gas(GAS_CARBON_MONOXIDE))
 
-        data['Time'].append(timestamp)
+        data['Time'].append(now_time)
         data['Methane'].append(gas_methane)
         data['LPG'].append(gas_lpg)
         data['Smoke'].append(gas_smoke)
@@ -114,13 +121,14 @@ while True:
         data['Carbon'].append(gas_carbon)
 
         # If date has changed, upload previous day's data to S3 and start new DataFrame
-        if date != prev_date:
-            if prev_date is not None:  # Skip upload on first run
-                df = pd.DataFrame(data)
-                filename = 'gas_data_{}.parquet'.format(prev_date)
-                upload_to_s3(df, filename)
+        if now >= parse(prev_time) + timedelta(minutes=10):
+            df = pd.DataFrame(data)
+            filename = 'gas_data_{}.parquet'.format(prev_time)
+            table = pa.Table.from_pandas(df)
+            pq.write_table(table, filename)
+            s3.upload_file(filename, bucket_name, filename)
 
-                print('Uploaded to S3')
+            print('Uploaded to S3')
 
             # Start new DataFrame
             data = {'Time': [],
@@ -130,12 +138,9 @@ while True:
                     'Alcohol': [],
                     'Carbon': []}
 
-        prev_date = date
+        prev_time = now_time
 
-        time.sleep(600)
+        time.sleep(1)
 
     except KeyboardInterrupt:
         print("KeyboardInterrupt")
-
-    else:
-        print('fail')
